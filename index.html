@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="generator" content="Hugo 0.88.1" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href=""https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/github.min.css">
+	<link rel="stylesheet" href="css/custom.css">
+	<link rel="stylesheet" href="css/normalize.css">
+
+	<title>Flamed-TTS</title>
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+
+<body data-new-gr-c-s-check-loaded="14.1091.0" data-gr-ext-installed="">
+
+<div class="container" >
+<header role="banner">
+</header>
+<main role="main">
+<article itemscope itemtype="https://schema.org/BlogPosting">
+
+<div class="container pt-5 mt-5 shadow-lg p-5 mb-5 bg-white rounded">
+	<p style="text-align: center;">
+		<img src="pics/flamed-tts-logo-5.png" height="460" width="460">
+	</p>
+	<div class="text-center">
+	  <div style="display: inline-block; padding: 4px 8px; border-radius: 8px; background-color: #FFEAD8; color: #235789; font-size: 36px; font-weight: bold; margin-bottom: 4px;">A Flow Matching Attention-Free Models for Efficient Generating and Dynamic Pacing Zero-shot Text-to-Speech</div>
+      <h5> <a href="https://github.com/flamedtts/Flamed-TTS" target="_blank" rel="noopener noreferrer">Code</a>; <a href="" target="_blank" rel="noopener noreferrer">Paper</a> </h5>
+	</div>
+	<p><b>Abstract</b> Zero-shot Text-to-Speech (TTS) has recently advanced significantly, enabling models to synthesize speech from text using short, limited-context prompts. These prompts serve as voice exemplars, allowing the model to mimic speaker identity, prosody, and other traits without extensive speaker-specific data. Although recent approaches incorporating language models, diffusion, and flow matching have proven their effectiveness in zero-shot TTS, they still encounter challenges such as unreliable synthesis caused by token repetition or unexpected content transfer, along with slow inference and substantial computational overhead. Moreover, temporal diversity—crucial for enhancing the naturalness of synthesized speech—remains largely underexplored. To address these challenges, we propose Flamed-TTS, a novel zero-shot TTS framework that emphasizes low computational cost, low latency, and high speech fidelity alongside rich temporal diversity. To achieve this, we reformulate the flow matching training paradigm and incorporate both discrete and continuous representations corresponding to different attributes of speech. Experimental results demonstrate that Flamed-TTS surpasses state-of-the-art models in terms of intelligibility, naturalness, speaker similarity, acoustic characteristics preservation, and dynamic pace. Notably, Flamed-TTS achieves the best WER of 4% compared to the leading zero-shot TTS baselines, while maintaining low latency in inference and high fidelity in generated speech. Code and audio samples are available at our <a href="https://flamed-tts.github.io">demo page</a>.
+	</p>
+	<p>
+	<b>Contents</b>
+      <ul>
+        <li><a href="#model-overview">Model Overview</a></li>
+        <li><a href="#zero-shot">Zero-shot Generation</a></li>
+		<!-- <li><a href="#temp-diverse">Temporal Diversity</a></li> -->
+        <li><a href="#robustness">Robustness</a></li>
+      </ul>
+	</p>
+</div>
+
+
+<div class="container pt-5 mt-5 shadow-lg p-5 mb-5 bg-white rounded">		
+	<h2 id="model-overview" style="text-align: center;">Model Overview</h2>
+	<body>
+	<p style="text-align: center;">
+		<img src="pics/flamed-tts.png" height="500" width="1000">
+	</p>
+	</body>
+	<p style="text-align: left;" >
+		<b>Figure 1</b>: Overview of Flamed-TTS. The input speech prompt is first processed by the Codec Encoder, which produces six latent sequences: one for prosody, two for content, and three for acoustic details. These encoded representations are then duplicated based on the durations predicted by the Duration Generator, while the Silence Generator inserts silences after each phoneme. The Code Decoder then generates predicted codes for the text prompt, conditioned on both the encoded phonemes and the latent representation of the reference speech. These predicted codes are converted into embeddings and merged before being passed through the Denoiser, where flow matching is performed. Finally, the output embeddings are fed into the Codec Decoder to synthesize the final speech waveform.
+	</p>
+	<body>
+		<p style="text-align: center;">
+			<img src="pics/CodeDecoder_Denoiser.png" height="500" width="600">
+		</p>
+		</body>
+		<p style="text-align: left;" >
+			<b>Figure 2</b>: Code Decoder architecture. With the encoded phonemes, the codes are generated gradually by corresponding FFT Blocks with condition of prior code of speech prompt. These synthesized codes are combined by a CNN module. This embedding is finally finetuned by the Denoiser with flow matching algorithm.
+		</p>
+</div>
+
+
+<div class="container pt-5 mt-5 shadow-lg p-5 mb-5 bg-white rounded">
+	<h2 id="zero-shot" style="text-align: center;">Zero-shot Generation (LibriSpeech)</h2>
+	<div class="table-responsive pt-3">
+		<table class="table table-hover pt-2">
+			<thead>
+			<tr>
+			<h5 style="text-align: center; display: inline-block; padding: 4px 8px; border-radius: 8px; background-color: #e0f7fa; color: #006064; font-weight: bold; margin-bottom: 4px;">1-second Prompt</h5>
+			<th style="vertical-align : middle;text-align: center">Content</th>
+			<th style="vertical-align : middle;text-align: center">Prompt</th>
+			<th style="vertical-align : middle;text-align: center">Flamed-TTS (Ours)</th>
+			<th style="vertical-align : middle;text-align: center">Spark-TTS</th>
+			<th style="vertical-align : middle;text-align: center">VoiceCraft</th>
+			<th style="vertical-align : middle;text-align: center">Natural Speech 2</th>
+			<th style="vertical-align : middle;text-align: center">VALL-E</th>
+			<th style="vertical-align : middle;text-align: center">F5-TTS</th>
+			<th style="vertical-align : middle;text-align: center">OZSpeech</th>
+			</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">these thoughts agitated me all day and my imagination scarcely calmed down after several hours sleep</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/prompt/260-123288-0010.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/flamedtts/260-123286-0016.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/sparktts/260-123286-0016.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/voicecraft/260-123286-0016.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/ns2/260-123286-0016.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/valle/260-123286-0016.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/f5tts/260-123286-0016.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/oz/260-123286-0016.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">every plant in the grass is set formally grows perfectly and may be realized completely</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/prompt/1188-133604-0033.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/flamedtts/1188-133604-0033.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/sparktts/1188-133604-0033.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/voicecraft/1188-133604-0033.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/ns2/1188-133604-0033.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/valle/1188-133604-0033.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/f5tts/1188-133604-0033.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/oz/1188-133604-0033.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">sir i have it in command to inform your excellency that you have been appointed governor of the crown colony which is called britannula</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/prompt/8455-210777-0070.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/flamedtts/8455-210777-0055.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/sparktts/8455-210777-0055.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/voicecraft/8455-210777-0055.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/ns2/8455-210777-0055.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/valle/8455-210777-0055.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/f5tts/8455-210777-0055.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/1s/oz/8455-210777-0055.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<div class="table-responsive pt-3">
+		<table class="table table-hover pt-2">
+			<thead>
+			<tr>
+			<h5 style="text-align: center; display: inline-block; padding: 4px 8px; border-radius: 8px; background-color: #e0f7fa; color: #006064; font-weight: bold; margin-bottom: 4px;">3-second Prompt</h5>
+			<th style="vertical-align : middle;text-align: center">Content</th>
+			<th style="vertical-align : middle;text-align: center">Prompt</th>
+			<th style="vertical-align : middle;text-align: center">Flamed-TTS (Ours)</th>
+			<th style="vertical-align : middle;text-align: center">Spark-TTS</th>
+			<th style="vertical-align : middle;text-align: center">VoiceCraft</th>
+			<th style="vertical-align : middle;text-align: center">Natural Speech 2</th>
+			<th style="vertical-align : middle;text-align: center">VALL-E</th>
+			<th style="vertical-align : middle;text-align: center">F5-TTS</th>
+			<th style="vertical-align : middle;text-align: center">OZSpeech</th>
+			</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">january and february of eighteen thirty seven had passed away and still there was no reply from southey</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/prompt/3575-170457-0054.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/flamedtts/3575-170457-0009.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/sparktts/3575-170457-0009.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/voicecraft/3575-170457-0009.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/ns2/3575-170457-0009.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/valle/3575-170457-0009.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/f5tts/3575-170457-0009.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/oz/3575-170457-0009.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">to be or not to be that is the question whether tis nobler in the mind to suffer the slings and arrows what no hamlet speaking</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/prompt/7176-88083-0022.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/flamedtts/7176-92135-0022.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/sparktts/7176-92135-0022.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/voicecraft/7176-92135-0022.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/ns2/7176-92135-0022.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/valle/7176-92135-0022.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/f5tts/7176-92135-0022.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/oz/7176-92135-0022.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">the stop at queenstown the tedious passage up the mersey were things that he noted dimly through his growing impatience</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/prompt/4446-2275-0001.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/flamedtts/4446-2275-0000.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/sparktts/4446-2275-0000.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/voicecraft/4446-2275-0000.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/ns2/4446-2275-0000.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/valle/4446-2275-0000.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/f5tts/4446-2275-0000.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/3s/oz/4446-2275-0000.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>	
+
+	<div class="table-responsive pt-3">
+		<table class="table table-hover pt-2">
+			<thead>
+			<tr>
+			<h5 style="text-align: center; display: inline-block; padding: 4px 8px; border-radius: 8px; background-color: #e0f7fa; color: #006064; font-weight: bold; margin-bottom: 4px;">5-second Prompt</h5>
+			<th style="vertical-align : middle;text-align: center">Content</th>
+			<th style="vertical-align : middle;text-align: center">Prompt</th>
+			<th style="vertical-align : middle;text-align: center">Flamed-TTS (Ours)</th>
+			<th style="vertical-align : middle;text-align: center">Spark-TTS</th>
+			<th style="vertical-align : middle;text-align: center">VoiceCraft</th>
+			<th style="vertical-align : middle;text-align: center">Natural Speech 2</th>
+			<th style="vertical-align : middle;text-align: center">VALL-E</th>
+			<th style="vertical-align : middle;text-align: center">F5-TTS</th>
+			<th style="vertical-align : middle;text-align: center">OZSpeech</th>
+			</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">double nine two three elsinore double nine yes hallo is that you horatio hamlet speaking</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/prompt/7176-88083-0004.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/flamedtts/7176-92135-0020.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/sparktts/7176-92135-0020.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/voicecraft/7176-92135-0020.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/ns2/7176-92135-0020.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/valle/7176-92135-0020.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/f5tts/7176-92135-0020.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/oz/7176-92135-0020.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">uncas cast his skin and stepped forth in his own beautiful proportions</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/prompt/1320-122617-0026.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/flamedtts/1320-122617-0041.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/sparktts/1320-122617-0041.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/voicecraft/1320-122617-0041.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/ns2/1320-122617-0041.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/valle/1320-122617-0041.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/f5tts/1320-122617-0041.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/oz/1320-122617-0041.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">all that i am doing is to use its logical tenability as a help in the analysis of what occurs when we remember</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/prompt/8230-279154-0020.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/flamedtts/8230-279154-0005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/sparktts/8230-279154-0005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/voicecraft/8230-279154-0005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/ns2/8230-279154-0005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/valle/8230-279154-0005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/f5tts/8230-279154-0005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="samples/5s/oz/8230-279154-0005.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</div>
+
+<!-- <div class="container pt-5 mt-5 shadow-lg p-5 mb-5 bg-white rounded">
+	<h2 id="robustness" style="text-align: center;">Robustness</h2>
+	<div class="table-responsive pt-3">
+		<table class="table table-hover pt-2">
+			<thead>
+			<tr>
+			<h5 style="text-align: center; display: inline-block; padding: 4px 8px; border-radius: 8px; background-color: #e0f7fa; color: #006064; font-weight: bold; margin-bottom: 4px;">Long Text</h5>
+			<th style="vertical-align : middle;text-align: center">Content</th>
+			<th style="vertical-align : middle;text-align: center">Prompt</th>
+			<th style="vertical-align : middle;text-align: center">Flamed-TTS (Ours)</th>
+			<th style="vertical-align : middle;text-align: center">Spark-TTS</th>
+			<th style="vertical-align : middle;text-align: center">VoiceCraft</th>
+			<th style="vertical-align : middle;text-align: center">Natural Speech 2</th>
+			<th style="vertical-align : middle;text-align: center">VALL-E</th>
+			<th style="vertical-align : middle;text-align: center">F5-TTS</th>
+			<th style="vertical-align : middle;text-align: center">OZSpeech</th>
+			</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">I don't really care what you call me. I've been a silent spectator, watching species evolve, empires rise and fall. But always remember, I am mighty and enduring.</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">I don't really care what you call me. I've been a silent spectator, watching species evolve, empires rise and fall. But always remember, I am mighty and enduring.</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">I don't really care what you call me. I've been a silent spectator, watching species evolve, empires rise and fall. But always remember, I am mighty and enduring.</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<div class="table-responsive pt-3">
+		<table class="table table-hover pt-2">
+			<thead>
+			<tr>
+			<h5 style="text-align: center; display: inline-block; padding: 4px 8px; border-radius: 8px; background-color: #e0f7fa; color: #006064; font-weight: bold; margin-bottom: 4px;">Noisy Prompt</h5>
+			<th style="vertical-align : middle;text-align: center">Content</th>
+			<th style="vertical-align : middle;text-align: center">Prompt</th>
+			<th style="vertical-align : middle;text-align: center">Flamed-TTS (Ours)</th>
+			<th style="vertical-align : middle;text-align: center">Spark-TTS</th>
+			<th style="vertical-align : middle;text-align: center">VoiceCraft</th>
+			<th style="vertical-align : middle;text-align: center">Natural Speech 2</th>
+			<th style="vertical-align : middle;text-align: center">VALL-E</th>
+			<th style="vertical-align : middle;text-align: center">F5-TTS</th>
+			<th style="vertical-align : middle;text-align: center">OZSpeech</th>
+			</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">I don't really care what you call me. I've been a silent spectator, watching species evolve, empires rise and fall. But always remember, I am mighty and enduring.</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">I don't really care what you call me. I've been a silent spectator, watching species evolve, empires rise and fall. But always remember, I am mighty and enduring.</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+				<tr>
+					<td style="vertical-align : middle;text-align:center;">I don't really care what you call me. I've been a silent spectator, watching species evolve, empires rise and fall. But always remember, I am mighty and enduring.</td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+					<td style="vertical-align : middle;text-align:center;"><audio controls="controls" style="width: 100px; height: 36px;"><source src="audios/zero_shot/seedtts_ref_en_1_gen_en.wav" autoplay/>Your browser does not support the audio element.</audio></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</div>
+
+</article>
+</main>
+</div> -->
+
+</body>
+</html>
