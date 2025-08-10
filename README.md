@@ -1,3 +1,4 @@
-# SWivid.github.io/F5-TTS
+# Flamed-TTS
 
-<a href="https://SWivid.github.io/F5-TTS">F5-TTS demo page</a>
+<a href="https://github.com/flamed-tts/Flamed-TTS/">Repo</a>
+<a href="https://flamed-tts.github.io/">demo page</a>
